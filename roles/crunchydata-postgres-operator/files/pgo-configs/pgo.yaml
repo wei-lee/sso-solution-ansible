@@ -1,0 +1,83 @@
+Cluster:
+  CCPImagePrefix:  registry.developers.crunchydata.com/crunchydata
+  Metrics:  false
+  Badger:  false
+  CCPImageTag:  centos7-12.3-4.3.2
+  Port:  5432
+  PGBadgerPort: 10000
+  ExporterPort: 9187
+  User:  testuser
+  Database:  ""
+  PasswordAgeDays:  0
+  PasswordLength:  24
+  Replicas:  0
+  ArchiveMode:  false
+  ServiceType:  ClusterIP
+  Backrest:  true
+  BackrestPort:  2022
+  BackrestS3Bucket:
+  BackrestS3Endpoint:
+  BackrestS3Region:
+  DisableAutofail:  false
+  PodAntiAffinity: preferred
+  PodAntiAffinityPgBackRest: ""
+  PodAntiAffinityPgBouncer: ""
+  SyncReplication: false
+  DefaultInstanceMemory: "128Mi"
+  DefaultBackrestMemory:
+  DefaultPgBouncerMemory:
+  DisableFSGroup: true
+PrimaryStorage: storageos
+WALStorage:
+BackupStorage: storageos
+ReplicaStorage: storageos
+BackrestStorage: storageos
+Storage:
+  hostpathstorage:
+    AccessMode:  ReadWriteMany
+    Size:  1G
+    StorageType:  create
+  replicastorage:
+    AccessMode:  ReadWriteMany
+    Size:  700M
+    StorageType:  create
+  nfsstorage:
+    AccessMode:  ReadWriteMany
+    Size:  1G
+    StorageType:  create
+    SupplementalGroups:  65534
+  nfsstoragered:
+    AccessMode:  ReadWriteMany
+    Size:  1G
+    MatchLabels: crunchyzone=red
+    StorageType:  create
+    SupplementalGroups:  65534
+  storageos:
+    AccessMode:  ReadWriteOnce
+    Size:  5Gi
+    StorageType:  dynamic
+    StorageClass:  gp2
+  primarysite:
+    AccessMode:  ReadWriteOnce
+    Size:  4G
+    StorageType:  dynamic
+    StorageClass:  gp2
+  alternatesite:
+    AccessMode:  ReadWriteOnce
+    Size:  4G
+    StorageType:  dynamic
+    StorageClass:  gp2
+  gce:
+    AccessMode:  ReadWriteOnce
+    Size:  300M
+    StorageType:  dynamic
+    StorageClass:  gp2
+  rook:
+    AccessMode:  ReadWriteOnce
+    Size:  1G
+    StorageType:  dynamic
+    StorageClass:  gp2
+Pgo:
+  Audit:  false
+  PGOImagePrefix:  registry.developers.crunchydata.com/crunchydata
+  PGOImageTag:  centos7-4.3.2

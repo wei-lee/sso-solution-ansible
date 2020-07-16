@@ -1,0 +1,80 @@
+---
+- name: Set output directory fact
+  set_fact:
+    output_dir: "/tmp/.pgo/{{ pgo_operator_namespace }}/output"
+  tags: always
+
+- name: Ensure output directory exists
+  file:
+    path: "{{ output_dir }}"
+    state: directory
+    mode: 0700
+  tags: always
+
+- name: Check PGO ConfigMap
+  shell: "oc get configmap pgo-config -n {{ pgo_operator_namespace }}"
+  register: pgo_config_result
+  failed_when: false
+
+- name: Create PGO ConfigMap
+  command: |
+    oc create configmap pgo-config \
+      --from-file='{{ role_path }}/files/pgo-configs' \
+      -n {{ pgo_operator_namespace }}
+  when: pgo_config_result.rc == 1
+
+- name: Check PGO BackRest Repo Secret
+  shell: "oc get secret pgo-backrest-repo-config -n {{ pgo_operator_namespace }}"
+  register: pgo_backrest_repo_config_result
+  failed_when: false
+
+- name: Create PGO BackRest Repo Secret
+  command: |
+    oc create secret generic pgo-backrest-repo-config \
+      --from-file=config='{{ role_path }}/files/pgo-backrest-repo/config' \
+      --from-file=sshd_config='{{ role_path }}/files/pgo-backrest-repo/sshd_config' \
+      -n {{ pgo_operator_namespace }}
+  when: pgo_backrest_repo_config_result.rc == 1
+
+- name: Copy PGO OperatorGroup
+  template:
+    src: operator-group.yaml
+    dest: "{{ output_dir }}/pgo-operator-group.yaml"
+
+- name: Create PGO opearator-group
+  command: "oc apply -f {{ output_dir }}/pgo-operator-group.yaml -n {{ pgo_operator_namespace }}"
+
+- name: Create PGO subscription
+  command: "oc apply -f {{ role_path }}/files/pgo-subscription/subscription.yaml -n {{ pgo_operator_namespace }}"
+
+- name: Wait for PGO to finish deploying
+  shell: "oc rollout status deployments/postgres-operator --watch=false | grep 'rolled out'"
+  register: result
+  until: result.rc == 0
+  retries: 50
+  delay: 10
+  changed_when: False
+
+- name: Delete PGO admin role secret
+  command: "oc delete secret pgorole-{{ pgo_admin_role_name }} -n {{ pgo_operator_namespace }} --ignore-not-found"
+
+- name: Create PGO admin role secret
+  command: "oc create secret generic pgorole-{{ pgo_admin_role_name }} --from-literal='rolename={{ pgo_admin_role_name }}' --from-literal='permissions=*' -n {{ pgo_operator_namespace }}"
+
+- name: Label PGO admin role secret
+  command: "oc label secret pgorole-{{ pgo_admin_role_name }} 'vendor=crunchydata' 'pgo-pgorole=true' 'rolename={{ pgo_admin_role_name }}' -n {{ pgo_operator_namespace }}"
+
+- name: Delete PGO admin user credential secret
+  command: "oc delete secret pgouser-{{ pgo_admin_user_name }} -n {{ pgo_operator_namespace }} --ignore-not-found"
+
+- name: Create PGO admin user credential secret
+  command: "oc create secret generic pgouser-{{ pgo_admin_user_name }} --from-literal='username={{ pgo_admin_user_name }}' --from-literal='password={{ pgo_admin_user_password }}' --from-literal='roles={{ pgo_admin_role_name }}'  -n {{ pgo_operator_namespace }}"
+
+- name: Label PGO admin role secret
+  command: "oc label secret pgouser-{{ pgo_admin_user_name }} 'vendor=crunchydata' 'pgo-pgouser=true' 'username={{ pgo_admin_user_name }}' -n {{ pgo_operator_namespace }}"
+
+- name: Create service for PGO
+  command: "oc apply -f {{ role_path }}/files/pgo-service.yaml -n {{ pgo_operator_namespace }}"
+
+- name: Create pgo-client deployment
+  command: "oc apply -f {{ role_path }}/files/pgo-client.yaml -n {{ pgo_operator_namespace }}"

@@ -1,0 +1,62 @@
+kind: Job
+apiVersion: batch/v1
+metadata:
+  name: pgo-client
+spec:
+  parallelism: 1
+  completions: 1
+  backoffLimit: 6
+  template:
+    spec:
+      volumes:
+        - name: certificates
+          secret:
+            secretName: pgo.tls
+            defaultMode: 420
+      containers:
+        - resources: {}
+          terminationMessagePath: /dev/termination-log
+          name: client
+          command:
+            - pgo
+            - create
+            - cluster
+            - sso
+            - '--username=sso'
+            - '--password=postgres'
+          env:
+            - name: PGO_APISERVER_URL
+              value: 'https://postgres-operator:8443'
+            - name: PGO_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: PGOUSERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: pgouser-admin
+                  key: username
+            - name: PGOUSERPASS
+              valueFrom:
+                secretKeyRef:
+                  name: pgouser-admin
+                  key: password
+            - name: PGO_CA_CERT
+              value: /etc/pgo/certificates/tls.crt
+            - name: PGO_CLIENT_CERT
+              value: /etc/pgo/certificates/tls.crt
+            - name: PGO_CLIENT_KEY
+              value: /etc/pgo/certificates/tls.key
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: certificates
+              mountPath: /etc/pgo/certificates
+          terminationMessagePolicy: File
+          image: >-
+            registry.developers.crunchydata.com/crunchydata/pgo-client:centos7-4.3.2
+      restartPolicy: OnFailure
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      securityContext: {}
+      schedulerName: default-scheduler

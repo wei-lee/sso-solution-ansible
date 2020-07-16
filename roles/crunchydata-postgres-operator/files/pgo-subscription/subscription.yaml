@@ -1,0 +1,11 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: postgresql
+spec:
+  channel: stable
+  installPlanApproval: Automatic
+  name: postgresql
+  source: community-operators
+  sourceNamespace: openshift-marketplace
+  startingCSV: postgresoperator.v4.3.2

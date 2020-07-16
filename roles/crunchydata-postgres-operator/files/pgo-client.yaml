@@ -1,0 +1,66 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: pgo-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pgo-client
+  template:
+    metadata:
+      labels:
+        app: pgo-client
+    spec:
+      volumes:
+        - name: certificates
+          secret:
+            secretName: pgo.tls
+            defaultMode: 420
+      containers:
+        - name: client
+          image: >-
+            registry.developers.crunchydata.com/crunchydata/pgo-client:centos7-4.3.2
+          env:
+            - name: PGO_APISERVER_URL
+              value: 'https://postgres-operator:8443'
+            - name: PGO_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: PGOUSERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: pgouser-admin
+                  key: username
+            - name: PGOUSERPASS
+              valueFrom:
+                secretKeyRef:
+                  name: pgouser-admin
+                  key: password
+            - name: PGO_CA_CERT
+              value: /etc/pgo/certificates/tls.crt
+            - name: PGO_CLIENT_CERT
+              value: /etc/pgo/certificates/tls.crt
+            - name: PGO_CLIENT_KEY
+              value: /etc/pgo/certificates/tls.key
+          resources: {}
+          volumeMounts:
+            - name: certificates
+              mountPath: /etc/pgo/certificates
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: IfNotPresent
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      securityContext: {}
+      schedulerName: default-scheduler
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600

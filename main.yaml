@@ -1,0 +1,7 @@
+---
+- name: Deploy SSO with a database
+  hosts: all
+  gather_facts: true
+  roles:
+    - openshift-prepare
+    - crunchydata-postgres-operator

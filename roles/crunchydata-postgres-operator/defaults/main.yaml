@@ -1,0 +1,5 @@
+---
+pgo_operator_namespace: pgo
+pgo_admin_role_name: pgoadmin
+pgo_admin_user_name: admin
+pgo_admin_user_password: examplepassword

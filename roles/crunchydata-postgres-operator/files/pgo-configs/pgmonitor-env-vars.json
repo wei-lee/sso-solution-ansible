@@ -1,0 +1,4 @@
+{
+  "name": "PGMONITOR_PASSWORD",
+  "value": "{{.PgmonitorPassword}}"
+},

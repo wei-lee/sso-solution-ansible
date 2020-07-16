@@ -1,0 +1,29 @@
+---
+- name: Authenticate with OpenShift via user and password
+  shell: |
+    oc login {{ openshift_host }} \
+      -u {{ openshift_user }} \
+      -p {{ openshift_password }} \
+      --insecure-skip-tls-verify={{ openshift_skip_tls_verify | default(false) | bool }}
+  when:
+    - openshift_user is defined and openshift_user != ''
+    - openshift_password is defined and openshift_password != ''
+    - openshift_token is not defined
+  no_log: false
+
+- name: Authenticate with OpenShift via token
+  shell: |
+    oc login {{ openshift_host }} \
+      --token {{ openshift_token }} \
+      --insecure-skip-tls-verify={{ openshift_skip_tls_verify | default(false) | bool }}
+  when: openshift_token is defined and openshift_token != ''
+  no_log: true
+
+- name: Get Project Details
+  shell: "oc get project {{ pgo_operator_namespace }}"
+  register: namespace_details
+  ignore_errors: yes
+
+- name: Create PGO Namespace
+  shell: "oc new-project {{ pgo_operator_namespace }}"
+  when: namespace_details.rc != 0
