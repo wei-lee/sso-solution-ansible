@@ -1,0 +1,73 @@
+---
+- name: "Get Project Details: {{ sso_operator_namespace }}"
+  shell: "oc get project {{ sso_operator_namespace }}"
+  register: namespace_details
+  ignore_errors: yes
+
+- name: "Create Project {{ sso_operator_namespace }}"
+  shell: "oc new-project {{ sso_operator_namespace }}"
+  when: namespace_details.rc != 0
+
+- name: Set output directory fact
+  set_fact:
+    output_dir: "/tmp/.sso/{{ sso_operator_namespace }}/output"
+  tags: always
+
+- name: Ensure output directory exists
+  file:
+    path: "{{ output_dir }}"
+    state: directory
+    mode: 0700
+  tags: always
+
+- name: Delete db creation job if it exists
+  shell: "oc delete job pgo-client -n {{ pgo_operator_namespace }}"
+  ignore_errors: true
+
+- name: Create sso database
+  include_tasks: "./apply-resource.yaml"
+  loop:
+    - create-db.yaml
+  vars:
+    tmp_dir: "{{ output_dir }}"
+    resource_namespace: "{{ pgo_operator_namespace }}"
+
+- name: Wait for database secret is ready
+  shell: "oc get secret {{ sso_database_name }}-{{ sso_database_username }}-secret -n {{ pgo_operator_namespace }}"
+  register: result
+  until: result.rc == 0
+  retries: 10
+  delay: 5
+
+- name: Get the database user password
+  shell: "oc get secret {{ sso_database_name }}-{{ sso_database_username }}-secret -o jsonpath='{.data.password}' -n {{ pgo_operator_namespace }}"
+  register: password_result
+
+- name: Set database user password
+  set_fact:
+    sso_database_user_password: "{{ password_result.stdout }}"
+
+- name: Create SSO external database secret
+  include_tasks: "./apply-resource.yaml"
+  loop:
+    - external-database-secret.yaml
+  vars:
+    tmp_dir: "{{ output_dir }}"
+    resource_namespace: "{{ sso_operator_namespace }}"
+
+- name: Create sso instance
+  include_tasks: "./apply-resource.yaml"
+  loop:
+    - sso-operator-group.yaml
+    - sso-subscription.yaml
+  vars:
+    tmp_dir: "{{ output_dir }}"
+    resource_namespace: "{{ sso_operator_namespace }}"
+  
+- name: Create keycloak CR
+  include_tasks: "./apply-resource.yaml"
+  loop:
+    - sso-cr.yaml
+  vars:
+    tmp_dir: "{{ output_dir }}"
+    resource_namespace: "{{ sso_operator_namespace }}"

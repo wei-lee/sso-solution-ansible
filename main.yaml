@@ -2,6 +2,15 @@
 - name: Deploy SSO with a database
   hosts: all
   gather_facts: true
-  roles:
-    - openshift-prepare
-    - crunchydata-postgres-operator
+  vars_files:
+    - ./values.yaml
+  tasks:
+    - import_role:
+        name: openshift-prepare
+      tags: always
+    - import_role:
+        name: crunchydata-postgres-operator
+      tags: crunchydata
+    - import_role:
+        name: sso
+      tags: always

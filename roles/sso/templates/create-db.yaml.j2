@@ -21,9 +21,8 @@ spec:
             - pgo
             - create
             - cluster
-            - sso
-            - '--username=sso'
-            - '--password=postgres'
+            - "{{ sso_database_name }}"
+            - "--username={{ sso_database_username }}"
           env:
             - name: PGO_APISERVER_URL
               value: 'https://postgres-operator:8443'

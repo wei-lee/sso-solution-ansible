@@ -1,0 +1,8 @@
+---
+- name: "Copy resource {{ item }}"
+  template:
+    src: "{{ item }}.j2"
+    dest: "{{ tmp_dir }}/{{ item }}"
+
+- name: "Create resource {{ item }}"
+  command: "oc apply -f {{ output_dir }}/{{ item }} -n {{ resource_namespace }}"

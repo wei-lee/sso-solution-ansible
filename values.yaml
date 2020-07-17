@@ -1,0 +1,3 @@
+---
+pgo_operator_namespace: pgo
+sso_operator_namespace: keycloak

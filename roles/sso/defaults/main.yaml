@@ -1,0 +1,4 @@
+---
+sso_operator_namespace: sso
+sso_database_name: sso
+sso_database_username: sso
