@@ -1,0 +1,17 @@
+apiVersion: "acid.zalan.do/v1"
+kind: postgresql
+metadata:
+  name: {{ sso_database_name }}-database
+spec:
+  teamId: {{ sso_database_name }}
+  volume:
+    size: 1Gi
+  numberOfInstances: 1
+  users:
+    {{ sso_database_username }}:  # database owner
+    - superuser
+    - createdb
+  databases:
+    {{ sso_database_name }}: {{ sso_database_username }}  # dbname: owner
+  postgresql:
+    version: "12"

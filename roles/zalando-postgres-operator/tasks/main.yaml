@@ -1,0 +1,51 @@
+---
+- name: "Get Project Details: {{ zpo_operator_namespace }}"
+  shell: "oc get project {{ zpo_operator_namespace }}"
+  register: namespace_details
+  ignore_errors: yes
+
+- name: "Create Project {{ zpo_operator_namespace }}"
+  shell: "oc new-project {{ zpo_operator_namespace }}"
+  when: namespace_details.rc != 0
+
+- name: Set output directory fact
+  set_fact:
+    output_dir: "/tmp/.zalando/{{ zpo_operator_namespace }}/output"
+
+- name: Ensure output directory exists
+  file:
+    path: "{{ output_dir }}"
+    state: directory
+    mode: 0700
+
+- name: "Create CRDs"
+  include_tasks: "./apply-resource.yaml"
+  loop:
+    - operatorconfigurations.yaml
+    - postgresqls.yaml
+  vars:
+    tmp_dir: "{{ output_dir }}"
+    resource_namespace: "{{ zpo_operator_namespace }}"
+
+- name: "Deploy Zalando postgres-operator"
+  include_tasks: "./apply-resource.yaml"
+  loop:
+    - configmap.yaml
+    - rbac.yaml
+    - deployment.yaml
+    - api-service.yaml
+  vars:
+    tmp_dir: "{{ output_dir }}"
+    resource_namespace: "{{ zpo_operator_namespace }}"
+
+- name: "Deploy Zalando postgres-operator configuration"
+  include_tasks: "./apply-resource.yaml"
+  loop:
+    - configurations.yaml
+  vars:
+    tmp_dir: "{{ output_dir }}"
+    resource_namespace: "{{ zpo_operator_namespace }}"
+
+- name: Set zalando postgres-operator database is available
+  set_fact:
+    zalando_database: true

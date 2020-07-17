@@ -1,3 +1,4 @@
 ---
 pgo_operator_namespace: pgo
 sso_operator_namespace: keycloak
+zpo_operator_namespace: zalando

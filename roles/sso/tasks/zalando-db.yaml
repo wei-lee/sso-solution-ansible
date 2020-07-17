@@ -1,0 +1,24 @@
+---
+- name: Create sso database
+  include_tasks: "./apply-resource.yaml"
+  loop:
+    - zalando-db.yaml
+  vars:
+    tmp_dir: "{{ output_dir }}"
+    resource_namespace: "{{ zpo_operator_namespace }}"
+
+- name: Wait for database secret is ready
+  shell: "oc get secret '{{ sso_database_username }}.{{ sso_database_name }}-database.credentials' -n {{ zpo_operator_namespace }}"
+  register: result
+  until: result.rc == 0
+  retries: 10
+  delay: 5
+
+- name: Get the database user password
+  shell: "oc get secret '{{ sso_database_username }}.{{ sso_database_name }}-database.credentials' -o jsonpath='{.data.password}' -n {{ zpo_operator_namespace }}"
+  register: password_result
+
+- name: Set database configurations
+  set_fact:
+    sso_database_user_password: "{{ password_result.stdout }}"
+    sso_database_external_host: "{{ sso_database_name + '-database' + '.' + zpo_operator_namespace + '.' + 'svc.cluster.local' }}"

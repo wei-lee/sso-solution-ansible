@@ -7,10 +7,12 @@
   tasks:
     - import_role:
         name: openshift-prepare
-      tags: always
     - import_role:
         name: crunchydata-postgres-operator
       tags: crunchydata
     - import_role:
+        name: zalando-postgres-operator
+      tags: zalando
+    - import_role:
         name: sso
-      tags: always
+      tags: sso

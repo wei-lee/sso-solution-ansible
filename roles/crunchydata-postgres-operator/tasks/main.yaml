@@ -11,14 +11,12 @@
 - name: Set output directory fact
   set_fact:
     output_dir: "/tmp/.pgo/{{ pgo_operator_namespace }}/output"
-  tags: always
 
 - name: Ensure output directory exists
   file:
     path: "{{ output_dir }}"
     state: directory
     mode: 0700
-  tags: always
 
 - name: Check PGO ConfigMap
   shell: "oc get configmap pgo-config -n {{ pgo_operator_namespace }}"
@@ -87,3 +85,7 @@
 
 - name: Create pgo-client deployment
   command: "oc apply -f {{ role_path }}/files/pgo-client.yaml -n {{ pgo_operator_namespace }}"
+
+- name: Set Crunchydata postgres-operator database is available
+  set_fact:
+    crunchydata_database: true

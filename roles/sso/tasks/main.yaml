@@ -11,41 +11,20 @@
 - name: Set output directory fact
   set_fact:
     output_dir: "/tmp/.sso/{{ sso_operator_namespace }}/output"
-  tags: always
 
 - name: Ensure output directory exists
   file:
     path: "{{ output_dir }}"
     state: directory
     mode: 0700
-  tags: always
 
-- name: Delete db creation job if it exists
-  shell: "oc delete job pgo-client -n {{ pgo_operator_namespace }}"
-  ignore_errors: true
+- name: Create database using Crunchydata postgres-operator
+  include_tasks: "./crunchydata-db.yaml"
+  when: (crunchydata_database is defined) and (crunchydata_database|bool == True) 
 
-- name: Create sso database
-  include_tasks: "./apply-resource.yaml"
-  loop:
-    - create-db.yaml
-  vars:
-    tmp_dir: "{{ output_dir }}"
-    resource_namespace: "{{ pgo_operator_namespace }}"
-
-- name: Wait for database secret is ready
-  shell: "oc get secret {{ sso_database_name }}-{{ sso_database_username }}-secret -n {{ pgo_operator_namespace }}"
-  register: result
-  until: result.rc == 0
-  retries: 10
-  delay: 5
-
-- name: Get the database user password
-  shell: "oc get secret {{ sso_database_name }}-{{ sso_database_username }}-secret -o jsonpath='{.data.password}' -n {{ pgo_operator_namespace }}"
-  register: password_result
-
-- name: Set database user password
-  set_fact:
-    sso_database_user_password: "{{ password_result.stdout }}"
+- name: Create database using Zalando postgres-operator
+  include_tasks: "./zalando-db.yaml"
+  when: (zalando_database is defined) and (zalando_database|bool == True)
 
 - name: Create SSO external database secret
   include_tasks: "./apply-resource.yaml"
